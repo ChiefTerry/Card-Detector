@@ -164,7 +164,7 @@ def project_card_on_flat(image, pts, w, h):
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     # warp = cv2.cvtColor(warp,cv2.COLOR_BGR2GRAY)
 
-    cv2.imshow('frame3', warp)
+    # cv2.imshow('frame3', warp)
 
     return warp
 
@@ -197,7 +197,7 @@ def main():
             for i in range(len(contour_sort)):
                 if contour_is_card[i] == 1:
                     # cards.append(preprocess_card(contour_sort[i], img_dilation))
-                    preprocess_card(img_dilation, contour_sort[i])
+                    cv2.imshow(str(i), preprocess_card(img_dilation, contour_sort[i]))
                     # pass
         
         # preprocess_card(img_dilation, contour_sort[0])
