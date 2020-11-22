@@ -14,8 +14,8 @@ def empty():
 
 cv2.namedWindow('Parameters')
 cv2.resizeWindow('Parameters', 640, 240)
-cv2.createTrackbar('Threshold1', 'Parameters', 0, 255, empty)
-cv2.createTrackbar('Threshold2', 'Parameters', 255, 255, empty)
+cv2.createTrackbar('Threshold1', 'Parameters', 35, 255, empty)
+cv2.createTrackbar('Threshold2', 'Parameters', 95, 255, empty)
 
 def point_prediction(img, approx, area, point, width, height):
     x = point[0]
@@ -175,7 +175,7 @@ def main():
         # gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         
         # Gaussian Blur
-        img_blur = cv2.GaussianBlur(frame, (7, 7), 1)
+        img_blur = cv2.GaussianBlur(frame, (5, 5), 0)
         img_gray = cv2.cvtColor(img_blur, cv2.COLOR_BGR2GRAY)
 
         # Get track position
@@ -186,7 +186,7 @@ def main():
         img_canny = cv2.Canny(img_gray, threshold1, threshold2)
 
         # Dialation image
-        kernel = np.ones((5,5))
+        kernel = np.ones((3,3), np.float32)/9
         img_dilation = cv2.dilate(img_canny, kernel, iterations = 1)
 
         contour_sort, contour_is_card = find_cards(img_dilation)
