@@ -1,13 +1,28 @@
 import cv2 # Import the OpenCV library
 import numpy as np # Import Numpy library
+import os
+
+path = 'resources'  #image in the resources
+orb = cv2.ORB_create(nfeatures=1000)
 
 cap = cv2.VideoCapture(0)
+
 green = (0, 255, 0)
 pink = (255, 0, 255)
 thickness = 4
 
 CARD_MAX_AREA = 120000
 CARD_MIN_AREA = 25000
+
+#### Import Images in the resources 
+images = []
+classNames = []
+myList = os.listdir(path)
+print('Total Classes Detected', len(myList))
+for cl in myList:
+    imgCur = cv2.imread(f'{path}/{cl}', 0)
+    images.append(imgCur)
+    classNames.append(os.path.splitext(cl)[0])
 
 def empty():
     pass
@@ -168,6 +183,38 @@ def project_card_on_flat(image, pts, w, h):
 
     return warp
 
+def findDes(images):
+    desList = []
+    for img in images:
+        kp, des = orb.detectAndCompute(img, None)
+        desList.append(des)
+    return desList
+
+### Add the key points in the image and keep in the array
+desList = findDes(images)
+
+def findID(img, desList, thres=90):
+    kp2, des2 = orb.detectAndCompute(img, None)
+    bf = cv2.BFMatcher()
+    matchList = []
+    finalVal = -1
+    try:
+        for des in desList:
+            matches = bf.knnMatch(des, des2, k=2)
+            good = []
+            for m, n in matches:
+                if m.distance < 0.75 * n.distance:
+                    good.append([m])
+            matchList.append(len(good))
+    except:
+        pass
+    # print(matchList)
+    if len(matchList) != 0:
+        if max(matchList) > thres:
+            finalVal = matchList.index(max(matchList))
+    return finalVal
+
+
 def main():
     while True:
         ret, frame = cap.read()
@@ -201,7 +248,13 @@ def main():
                     cards.append(preprocess_card(gray, contour_sort[i]))
                     # cv2.imshow('frame3', warp)
                     # pass
-        
+
+        # Process and classify card        
+        # for card in cards:
+            
+        #         cv2.putText(card, classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
+        #         print(classNames[id])
+
         # preprocess_card(img_dilation, contour_sort[0])
 
 
@@ -210,8 +263,10 @@ def main():
         cv2.imshow('frame',gray)
         # cv2.imshow('frame2',img_dilation)
         for i in range(len(cards)):
-            cv2.imshow('frame {}'.format(i), cards[i])
-
+            id = findID(cards[i], desList)
+            if id != -1:
+                cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
+                cv2.imshow('frame {}'.format(i), cards[i])
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
