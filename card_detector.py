@@ -197,7 +197,7 @@ def main():
             for i in range(len(contour_sort)):
                 if contour_is_card[i] == 1:
                     # cards.append(preprocess_card(contour_sort[i], img_dilation))
-                    cv2.imshow(str(i), preprocess_card(img_dilation, contour_sort[i]))
+                    cv2.imshow(str(i), preprocess_card(img_gray, contour_sort[i]))
                     # pass
         
         # preprocess_card(img_dilation, contour_sort[0])
