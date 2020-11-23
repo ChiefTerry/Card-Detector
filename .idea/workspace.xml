@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="756bf31c-8396-4c7a-9af7-046917beff0f" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/card_detector.py" beforeDir="false" afterPath="$PROJECT_DIR$/card_detector.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -52,7 +52,7 @@
       <workItem from="1606051219302" duration="1353000" />
       <workItem from="1606056071876" duration="2829000" />
       <workItem from="1606060783424" duration="166000" />
-      <workItem from="1606102330741" duration="895000" />
+      <workItem from="1606102330741" duration="757000" />
     </task>
     <servers />
   </component>
