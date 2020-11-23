@@ -1,10 +1,13 @@
 import cv2 # Import the OpenCV library
 import numpy as np # Import Numpy library
+import os #Import OS to capture detection
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 green = (0, 255, 0)
 pink = (255, 0, 255)
 thickness = 4
+path = 'resources'  #image resources
+orb = cv2.ORB_create(nfeatures=1000)
 
 CARD_MAX_AREA = 120000
 CARD_MIN_AREA = 25000
@@ -16,6 +19,51 @@ cv2.namedWindow('Parameters')
 cv2.resizeWindow('Parameters', 640, 240)
 cv2.createTrackbar('Threshold1', 'Parameters', 35, 255, empty)
 cv2.createTrackbar('Threshold2', 'Parameters', 95, 255, empty)
+
+
+#### Import Images
+images = []
+classNames = []
+myList = os.listdir(path)
+print('Total Classes Detected', len(myList))
+for cl in myList:
+    imgCur = cv2.imread(f'{path}/{cl}', 0)
+    images.append(imgCur)
+    classNames.append(os.path.splitext(cl)[0])
+print(classNames)
+
+
+def findDes(images):
+    desList = []
+    for img in images:
+        kp, des = orb.detectAndCompute(img, None)
+        desList.append(des)
+    return desList
+
+
+def findID(img, desList, thres=15):
+    kp2, des2 = orb.detectAndCompute(img, None)
+    bf = cv2.BFMatcher()
+    matchList = []
+    finalVal = -1
+    try:
+        for des in desList:
+            matches = bf.knnMatch(des, des2, k=2)
+            good = []
+            for m, n in matches:
+                if m.distance < 0.75 * n.distance:
+                    good.append([m])
+            matchList.append(len(good))
+    except:
+        pass
+    # print(matchList)
+    if len(matchList) != 0:
+        if max(matchList) > thres:
+            finalVal = matchList.index(max(matchList))
+    return finalVal
+
+
+desList = findDes(images)
 
 def point_prediction(img, approx, area, point, width, height):
     x = point[0]
@@ -197,7 +245,13 @@ def main():
             for i in range(len(contour_sort)):
                 if contour_is_card[i] == 1:
                     # cards.append(preprocess_card(contour_sort[i], img_dilation))
-                    cv2.imshow(str(i), preprocess_card(img_dilation, contour_sort[i]))
+
+                    warp_img = preprocess_card(img_gray, contour_sort[i])
+                    id = findID(warp_img, desList)
+                    if id != -1:
+                        cv2.putText(warp_img, classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
+                    cv2.imshow(str(i), warp_img)
+
                     # pass
         
         # preprocess_card(img_dilation, contour_sort[0])
