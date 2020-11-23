@@ -172,7 +172,7 @@ def main():
     while True:
         ret, frame = cap.read()
         # imgContour = frame.copy()
-        # gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         
         # Gaussian Blur
         img_blur = cv2.GaussianBlur(frame, (5, 5), 0)
@@ -191,13 +191,15 @@ def main():
 
         contour_sort, contour_is_card = find_cards(img_dilation)
 
+        cards = []
+
         if len(contour_sort) != 0:
-            cards = []
             
             for i in range(len(contour_sort)):
                 if contour_is_card[i] == 1:
-                    # cards.append(preprocess_card(contour_sort[i], img_dilation))
-                    cv2.imshow(str(i), preprocess_card(img_gray, contour_sort[i]))
+                    # cv2.imshow(str(i), preprocess_card(img_gray, contour_sort[i]))
+                    cards.append(preprocess_card(gray, contour_sort[i]))
+                    # cv2.imshow('frame3', warp)
                     # pass
         
         # preprocess_card(img_dilation, contour_sort[0])
@@ -205,8 +207,10 @@ def main():
 
 
         # Display the resulting frame
-        cv2.imshow('frame',frame)
-        cv2.imshow('frame2',img_dilation)
+        cv2.imshow('frame',gray)
+        # cv2.imshow('frame2',img_dilation)
+        for i in range(len(cards)):
+            cv2.imshow('frame {}'.format(i), cards[i])
 
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
