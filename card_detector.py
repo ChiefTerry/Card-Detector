@@ -1,6 +1,7 @@
 import cv2 # Import the OpenCV library
 import numpy as np # Import Numpy library
 import os
+import argparse
 
 path = 'resources'  #image in the resources
 orb = cv2.ORB_create(nfeatures=1000)
@@ -13,6 +14,10 @@ thickness = 4
 
 CARD_MAX_AREA = 120000
 CARD_MIN_AREA = 25000
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--image", help = "path to the image file")
+args = vars(ap.parse_args())
 
 #### Import Images in the resources 
 images = []
@@ -257,16 +262,27 @@ def main():
 
         # preprocess_card(img_dilation, contour_sort[0])
 
-
-
-        # Display the resulting frame
-        cv2.imshow('frame',gray)
         # cv2.imshow('frame2',img_dilation)
         for i in range(len(cards)):
             id = findID(cards[i], desList)
             if id != -1:
                 cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
                 cv2.imshow('frame {}'.format(i), cards[i])
+
+        if (cv2.waitKey(1) & 0xFF == ord('p')) and len(cards) != 0:
+            cv2.imwrite("resources/{}.png".format(args['image']), cards[0])
+            cv2.imshow('frame capture', cards[0])
+
+        if cv2.waitKey(1) & 0xFF == ord('o'):
+            img = cv2.imread("resources/{}.png".format(args['image']))
+            cv2.imshow('frame capture2', img)
+
+        # cv2.imshow('frame2', img_dilation)
+        find_contour(frame, img_dilation)
+
+        # Display the resulting frame
+        cv2.imshow('frame',frame)
+
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
