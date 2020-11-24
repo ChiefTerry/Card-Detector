@@ -268,6 +268,7 @@ def main():
             id = findID(cards[i][0], desList)
 
             if id != -1:
+                print(classNames[id])
                 cv2.putText(cards[i][0], classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
                 # detectLocation(cards[i][0],contour_sort[i])
 
