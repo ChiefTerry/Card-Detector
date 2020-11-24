@@ -73,7 +73,7 @@ def find_contour(img, imgContour):
                 # Get perimeter and approximation of boundary
                 peri = cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
-                print(len(approx))
+                # print(len(approx))
                 
                 # Apply bounding rectangle
                 x, y, width, height = cv2.boundingRect(approx)
@@ -125,7 +125,7 @@ def find_cards(thresh_image):
         size = cv2.contourArea(cnts_sort[i])
         peri = cv2.arcLength(cnts_sort[i],True)
         approx = cv2.approxPolyDP(cnts_sort[i],0.01*peri,True)
-        
+
         if ((size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
             and (hier_sort[i][3] == -1) and (len(approx) == 4)):
             cnt_is_card[i] = 1
@@ -198,7 +198,7 @@ def findDes(images):
 ### Add the key points in the image and keep in the array
 desList = findDes(images)
 
-def findID(img, desList, thres=90):
+def findID(img, desList, thres=15):
     kp2, des2 = orb.detectAndCompute(img, None)
     bf = cv2.BFMatcher()
     matchList = []
@@ -211,6 +211,8 @@ def findID(img, desList, thres=90):
                 if m.distance < 0.75 * n.distance:
                     good.append([m])
             matchList.append(len(good))
+            print(len(good))
+
     except:
         pass
     # print(matchList)
@@ -250,7 +252,7 @@ def main():
             for i in range(len(contour_sort)):
                 if contour_is_card[i] == 1:
                     # cv2.imshow(str(i), preprocess_card(img_gray, contour_sort[i]))
-                    cards.append(preprocess_card(gray, contour_sort[i]))
+                    cards.append(preprocess_card(img_dilation, contour_sort[i]))
                     # cv2.imshow('frame3', warp)
                     # pass
 
@@ -266,8 +268,9 @@ def main():
         for i in range(len(cards)):
             id = findID(cards[i], desList)
             if id != -1:
-                cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
+                # cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
                 cv2.imshow('frame {}'.format(i), cards[i])
+
 
         if (cv2.waitKey(1) & 0xFF == ord('p')) and len(cards) != 0:
             cv2.imwrite("resources/{}.png".format(args['image']), cards[0])
