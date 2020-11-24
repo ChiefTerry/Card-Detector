@@ -35,27 +35,11 @@ def empty():
 cv2.namedWindow('Parameters')
 cv2.resizeWindow('Parameters', 640, 240)
 cv2.createTrackbar('Threshold1', 'Parameters', 35, 255, empty)
-cv2.createTrackbar('Threshold2', 'Parameters', 95, 255, empty)
-
-def point_prediction(img, approx, area, point, width, height):
-    x = point[0]
-    y = point[1]
-    
-    # Prediction
-    if len(approx) == 8:
-        cv2.putText(img, "Prediction: Cylinder", (x + width + 20, y + 70), \
-                    cv2.FONT_HERSHEY_COMPLEX, 1.0, green, 2)
-    elif len(approx) == 6:
-        cv2.putText(img, "Prediction: Cuboid", (x + width + 20, y + 70), \
-                    cv2.FONT_HERSHEY_COMPLEX, 1.0, green, 2)
-    elif len(approx) > 8:
-        cv2.putText(img, "Prediction: Unknown", (x + width + 20, y + 70), \
-                    cv2.FONT_HERSHEY_COMPLEX, 1.0, green, 2)                    
+cv2.createTrackbar('Threshold2', 'Parameters', 95, 255, empty)                   
 
 def find_contour(img, imgContour):
     contours, hierarchy = cv2.findContours(imgContour, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)[-2:]
     index_sort = sorted(range(len(contours)), key=lambda i : cv2.contourArea(contours[i]),reverse=True)
-    # cv2.drawContours(img, contours, -1, (0,255,0), 7)
 
     if len(contours) > 1:
         contours_sort = []
@@ -73,7 +57,6 @@ def find_contour(img, imgContour):
                 # Get perimeter and approximation of boundary
                 peri = cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
-                # print(len(approx))
                 
                 # Apply bounding rectangle
                 x, y, width, height = cv2.boundingRect(approx)
@@ -182,9 +165,6 @@ def project_card_on_flat(image, pts, w, h):
     dst = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
     M = cv2.getPerspectiveTransform(temp_rect,dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-    # warp = cv2.cvtColor(warp,cv2.COLOR_BGR2GRAY)
-
-    # cv2.imshow('frame3', warp)
 
     return warp
 
@@ -242,52 +222,46 @@ def main():
         # Dialation image
         kernel = np.ones((3,3), np.float32)/9
         img_dilation = cv2.dilate(img_canny, kernel, iterations = 1)
-
+        
+        # Identify contour is card
         contour_sort, contour_is_card = find_cards(img_dilation)
-
+        
         cards = []
-
         if len(contour_sort) != 0:
-            
             for i in range(len(contour_sort)):
                 if contour_is_card[i] == 1:
-                    # cv2.imshow(str(i), preprocess_card(img_gray, contour_sort[i]))
                     cards.append(preprocess_card(img_dilation, contour_sort[i]))
-                    # cv2.imshow('frame3', warp)
-                    # pass
 
-        # Process and classify card        
-        # for card in cards:
-            
-        #         cv2.putText(card, classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
-        #         print(classNames[id])
-
-        # preprocess_card(img_dilation, contour_sort[0])
-
-        # cv2.imshow('frame2',img_dilation)
+        # Show the card
         for i in range(len(cards)):
             id = findID(cards[i], desList)
             if id != -1:
                 cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
                 cv2.imshow('frame {}'.format(i), cards[i])
 
-
+        # Train the first card in the found contour card
         if (cv2.waitKey(1) & 0xFF == ord('p')) and len(cards) != 0:
+            print('Button P: Train the first card is pressed!')
             cv2.imwrite("resources/{}.png".format(args['image']), cards[0])
             cv2.imshow('frame capture', cards[0])
 
+        # Show the card if it is exist in 
         if cv2.waitKey(1) & 0xFF == ord('o'):
+            print('Button P: Show the trained card is pressed!')
             img = cv2.imread("resources/{}.png".format(args['image']))
             cv2.imshow('frame capture2', img)
 
-        # cv2.imshow('frame2', img_dilation)
-        find_contour(frame, img_dilation)
+        # find_contour(frame, img_dilation)
 
         # Display the resulting frame
-        cv2.imshow('frame',frame)
+        first_frame = np.concatenate((frame,img_blur), axis = 1)
+        second_frame = np.concatenate((img_canny,img_dilation), axis = 1)
+        cv2.imshow('frame',first_frame)
+        cv2.imshow('frame2',second_frame)
 
-
+        # Exit the system
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            print('Button Q: Thank you for using the card detector!')
             break
 
     # Close down the video stream
