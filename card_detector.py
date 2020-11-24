@@ -268,7 +268,7 @@ def main():
         for i in range(len(cards)):
             id = findID(cards[i], desList)
             if id != -1:
-                # cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
+                cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
                 cv2.imshow('frame {}'.format(i), cards[i])
 
 
