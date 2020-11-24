@@ -138,7 +138,7 @@ def preprocess_card(image, contour):
 
     warp = project_card_on_flat(image, pts, w, h)
 
-    return warp
+    return (warp, (cent_x, cent_y))
 
 def project_card_on_flat(image, pts, w, h):
     temp_rect = np.zeros((4,2), dtype = "float32")
@@ -218,6 +218,21 @@ def findID(img, desList, thres=15):
             finalVal = matchList.index(max(matchList))
     return finalVal
 
+def detectLocation(image, contour ):
+    peri = cv2.arcLength(contour, True)
+    approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+
+    x, y, w, h = cv2.boundingRect(contour)
+    pts = np.float32(approx)
+
+    average = np.sum(pts, axis=0) / len(pts)
+    cent_x = int(average[0][0])
+    cent_y = int(average[0][1])
+
+    cv2.putText(image, cent_x, (0,0), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(image, cent_y, (20,20), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+
+
 def main():
     while True:
         ret, frame = cap.read()
@@ -250,17 +265,25 @@ def main():
                     cards.append(preprocess_card(img_dilation, contour_sort[i]))
 
         for i in range(len(cards)):
-            id = findID(cards[i], desList)
+            id = findID(cards[i][0], desList)
 
             if id != -1:
-                cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
-            cv2.imshow('frame {}'.format(i), cards[i])
+                cv2.putText(cards[i][0], classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+                # detectLocation(cards[i][0],contour_sort[i])
+
+            cent_x = cards[i][1][0]
+            cent_y = cards[i][1][1]
+
+            pts = f" x:{cards[i][1][0]} y:{cards[i][1][1]}"
+
+            cv2.putText(frame, pts, (cent_x, cent_y), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+            cv2.imshow('frame {}'.format(i), cards[i][0])
 
         # Train the first card in the found contour card
         if (cv2.waitKey(1) & 0xFF == ord('p')) and len(cards) != 0:
             print('Button P: Train the first card is pressed!')
-            cv2.imwrite("resources/{}.png".format(args['image']), cards[0])
-            cv2.imshow('frame capture', cards[0])
+            cv2.imwrite("resources/{}.png".format(args['image']), cards[0][0])
+            cv2.imshow('frame capture', cards[0][0])
 
         # Show the card if it is exist in 
         if cv2.waitKey(1) & 0xFF == ord('o'):
@@ -271,10 +294,12 @@ def main():
         # find_contour(frame, img_dilation)
 
         # Display the resulting frame
-        first_frame = np.concatenate((frame,img_blur), axis = 1)
-        second_frame = np.concatenate((img_canny,img_dilation), axis = 1)
-        cv2.imshow('frame',first_frame)
-        cv2.imshow('frame2',second_frame)
+        # first_frame = np.concatenate((frame,img_blur), axis = 1)
+        # second_frame = np.concatenate((img_canny,img_dilation), axis = 1)
+        # cv2.imshow('frame',first_frame)
+        # cv2.imshow('frame2',second_frame)
+
+        cv2.imshow('frame', frame)
 
         # Exit the system
         if cv2.waitKey(1) & 0xFF == ord('q'):
