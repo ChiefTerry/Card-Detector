@@ -12,14 +12,16 @@ green = (0, 255, 0)
 pink = (255, 0, 255)
 thickness = 4
 
-CARD_MAX_AREA = 120000
-CARD_MIN_AREA = 25000
+CARD_MAX_AREA = 150000
+CARD_MIN_AREA = 15000
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", help = "path to the image file")
 args = vars(ap.parse_args())
 
-#### Import Images in the resources 
+area = []
+
+#### Import Images in the resources
 images = []
 classNames = []
 myList = os.listdir(path)
@@ -33,7 +35,7 @@ def empty():
     pass
 
 cv2.namedWindow('Parameters')
-cv2.resizeWindow('Parameters', 640, 240)
+cv2.resizeWindow('Parameters', 320, 120)
 cv2.createTrackbar('Threshold1', 'Parameters', 35, 255, empty)
 cv2.createTrackbar('Threshold2', 'Parameters', 95, 255, empty)                   
 
@@ -115,6 +117,14 @@ def find_cards(thresh_image):
 
     return cnts_sort, cnt_is_card
 
+def find_area(img):
+    maxWidth = 500
+    maxHeight = 500
+
+    ##First maze
+    temp_rect = np.float32([[0, 0], [20, 20], [50, 50], [100, 100]])
+    warp = warp_processing(img, temp_rect, maxWidth, maxHeight)
+
 def preprocess_card(image, contour):
     peri = cv2.arcLength(contour, True)
     approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
@@ -159,14 +169,22 @@ def project_card_on_flat(image, pts, w, h):
 
     maxWidth = 200
     maxHeight = 500
-    
-    # Create destination array, calculate perspective transform matrix, 
-    # and warp card image
+
+    # warp = warp_processing(image, temp_rect, maxWidth, maxHeight)
+    # # Create destination array, calculate perspective transform matrix,
+    # # and warp card image
     dst = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
     M = cv2.getPerspectiveTransform(temp_rect,dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
     return warp
+
+def warp_processing(img, temp, maxWidth, maxHeight):
+    pts2 = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
+    matrix = cv2.getPerspectiveTransform(temp, pts2)
+    imgOutput = cv2.warpPerspective(img, matrix, (maxWidth, maxHeight))
+    return imgOutput
+
 
 def findDes(images):
     desList = []
@@ -191,7 +209,6 @@ def findID(img, desList, thres=15):
                 if m.distance < 0.75 * n.distance:
                     good.append([m])
             matchList.append(len(good))
-            print(len(good))
 
     except:
         pass
@@ -200,7 +217,6 @@ def findID(img, desList, thres=15):
         if max(matchList) > thres:
             finalVal = matchList.index(max(matchList))
     return finalVal
-
 
 def main():
     while True:
@@ -220,24 +236,25 @@ def main():
         img_canny = cv2.Canny(img_gray, threshold1, threshold2)
 
         # Dialation image
-        kernel = np.ones((3,3), np.float32)/9
+        kernel = np.ones((1,1))
         img_dilation = cv2.dilate(img_canny, kernel, iterations = 1)
         
         # Identify contour is card
         contour_sort, contour_is_card = find_cards(img_dilation)
         
         cards = []
+
         if len(contour_sort) != 0:
             for i in range(len(contour_sort)):
                 if contour_is_card[i] == 1:
                     cards.append(preprocess_card(img_dilation, contour_sort[i]))
 
-        # Show the card
         for i in range(len(cards)):
             id = findID(cards[i], desList)
+
             if id != -1:
-                cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
-                cv2.imshow('frame {}'.format(i), cards[i])
+                cv2.putText(cards[i], classNames[id], (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+            cv2.imshow('frame {}'.format(i), cards[i])
 
         # Train the first card in the found contour card
         if (cv2.waitKey(1) & 0xFF == ord('p')) and len(cards) != 0:
