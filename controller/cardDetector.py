@@ -3,6 +3,7 @@ import numpy as np # Import Numpy library
 import os
 import argparse
 import config
+import time
 
 class cardDetector:
 
@@ -23,8 +24,8 @@ class cardDetector:
             'bottom_threshold': 35
         }
         self.config_window_size = {
-             'width': 320,
-            'height': 120
+             'width': 640,
+            'height': 240
         }
 
         self.orb = cv2.ORB_create(nfeatures=1000)
@@ -34,6 +35,7 @@ class cardDetector:
         self.classNames = None
         self.images = None
         self.desList = None
+        self.count = 0
 
     def empty(self):
         pass
@@ -90,7 +92,7 @@ class cardDetector:
         return self.__project_card_on_flat(image, pts, w, h)
 
 
-    def get_center_contour(self, image, contour):
+    def get_center_contour(self, contour):
         peri = cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
         
@@ -102,6 +104,14 @@ class cardDetector:
         cent_y = int(average[0][1])
 
         return cent_x, cent_y
+    
+    def draw_rectangle_test(self, image, contour):
+        peri = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+        
+        x,y,w,h = cv2.boundingRect(contour)
+
+        cv2.rectangle(image, (x,y), (x + w, y + h), (255, 0, 0), 3)
 
 
     def __project_card_on_flat(self, image, pts, w, h):
@@ -134,7 +144,6 @@ class cardDetector:
         maxWidth = 200
         maxHeight = 500
 
-        # warp = warp_processing(image, temp_rect, maxWidth, maxHeight)
         # # Create destination array, calculate perspective transform matrix,
         # # and warp card image
         dst = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
@@ -186,6 +195,24 @@ class cardDetector:
             self.images.append(imgCur)
             self.classNames.append(os.path.splitext(cl)[0])
 
+    def get_player_id(self, pts = (0,0)):
+        x = pts[0]
+        y = pts[1]
+        id = None
+
+        if   0 < x <= 600 and 0 < y <= 400:
+            id = 1
+        elif 600 < x <= 1200 and 0 < y <= 400:
+            id = 2
+        elif 0 < x <= 600 and 400 < y <= 800:
+            id = 3
+        elif 600 < x <= 1200 and 400 < y <= 800:
+            id = 4
+        else:
+            id = 0
+        
+        return id
+
     def run(self):
         self.ap.add_argument("-i", "--image", help = "path to the image file")
         args = vars(self.ap.parse_args())
@@ -218,33 +245,38 @@ class cardDetector:
             # Identify contour is card
             contour_sort, contour_is_card = self.__find_cards(img_dilation)
 
-            cards = []
+            self.cards = []
             desList = self.findDes(self.images)
 
             if len(contour_sort) != 0:
                 for i in range(len(contour_sort)):
                     if contour_is_card[i] == 1:
-                        cards.append(self.__preprocess_card(img_dilation, contour_sort[i]))
+                        self.cards.append(self.__preprocess_card(img_dilation, contour_sort[i]))
+                        self.draw_rectangle_test(frame, contour_sort[i])
+                        pts = self.get_center_contour(contour_sort[i])
 
-            for i in range(len(cards)):
-                id = findID(cards[i][0], desList)
+            print(len(self.cards))
+            for i in range(len(self.cards)):
+                # id = self.findID(self.cards[i][0], desList)
 
-                if id != -1:
-                    # print(classNames[id])
-                    cv2.putText(cards[i][0], classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+                # if id != -1:
+                #     # print(classNames[id])
+                #     cv2.putText(self.cards[i][0], classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
 
-                pts = self.get_center_contour(img_dilation, contour_sort[i])
+                # pts = self.get_center_contour(contour_sort[i])
 
-                pts_text = f" x:{cards[i][1][0]} y:{cards[i][1][1]}"
+                pts_text = f" x:{pts[0]} y:{pts[1]}"
+                # pts_text = "Player {}".format(self.get_player_id(pts))
 
-                cv2.putText(frame, pts_text, (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
-                cv2.imshow('frame {}'.format(i), cards[i][0])
+                # cv2.putText(frame, pts_text, (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+                # cv2.imshow('frame {}'.format(i), self.cards[i])
+                print(pts)
 
             # Train the first card in the found contour card
-            if (cv2.waitKey(1) & 0xFF == ord('p')) and len(cards) != 0:
+            if (cv2.waitKey(1) & 0xFF == ord('p')) and len(self.cards) != 0:
                 print('Button P: Train the first card is pressed!')
-                cv2.imwrite("resources/{}.png".format(args['image']), cards[0][0])
-                cv2.imshow('frame capture', cards[0][0])
+                cv2.imwrite("resources/{}.png".format(args['image']), self.cards[0][0])
+                cv2.imshow('frame capture', self.cards[0][0])
 
             # Show the card if it is exist in 
             if cv2.waitKey(1) & 0xFF == ord('o'):
@@ -255,13 +287,19 @@ class cardDetector:
             # Display the resulting frame
             first_frame = np.concatenate((frame,img_blur), axis = 1)
             second_frame = np.concatenate((img_canny,img_dilation), axis = 1)
-            cv2.imshow('frame',first_frame)
-            cv2.imshow('frame2',second_frame)
+            cv2.imshow('frame',frame)
+            cv2.imshow('frame2',img_dilation)
 
             # Exit the system
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 print('Button Q: Thank you for using the card detector!')
                 break
+            
+            # self.count = self.count + 1
+
+            # if self.count % 5 == 0 and len(self.cards) != 0:
+            #     self.count = 0
+            #     time.sleep(0.5)
 
 if __name__ == "__main__":
     app = cardDetector()
