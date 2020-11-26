@@ -5,6 +5,11 @@ import argparse
 import config
 import time
 
+from model import player
+from model.card import Card
+from model.player import Player
+from model.typeCard import Type
+
 
 class cardDetector:
 
@@ -31,12 +36,10 @@ class cardDetector:
 
         self.orb = cv2.ORB_create(nfeatures=1000)
 
-        self.cards = None
-        self.area = None
+        self.player = None
         self.classNames = None
         self.images = None
         self.desList = None
-        self.count = 0
 
     def empty(self):
         pass
@@ -174,6 +177,46 @@ class cardDetector:
 
         return finalVal
 
+    def groupCard(self, name):
+        if name == "5_dollar":
+            return Type.DOLLAR_5.value
+
+        if name == "10_dollar":
+            return Type.DOLLAR_10.value
+
+        if name == "20_dollar":
+            return Type.DOLLAR_20.value
+
+        if name == "add_bullet":
+            return Type.ADD_BULLET.value
+
+        if name == "bang_dilation":
+            return Type.BANG_BULLET.value
+
+        if name == "click_dilation":
+            return Type.CLICK_BULLET.value
+
+        if name == "cure":
+            return Type.CURE.value
+
+        if name == "diamond_1":
+            return Type.DIAMOND_1.value
+
+        if name == "diamond_5":
+            return Type.DIAMOND_5.value
+
+        if name == "diamond_10":
+            return Type.DIAMOND_10.value
+
+        if name == "hidden_bullet":
+            return Type.HIDDEN_BULLET.value
+
+        if name == "picture" and name == "picture1" and name == "picture2" and \
+                name == "picture3" and name == "picture4" and name == "pictur5" and \
+                name == "picture6" and name == "picture7" and name == "picture8" and \
+                name == "picture9":
+            return Type.PICTURE.value
+
     def findDes(self, images):
         self.desList = []
 
@@ -194,23 +237,24 @@ class cardDetector:
             self.images.append(imgCur)
             self.classNames.append(os.path.splitext(cl)[0])
 
-    def get_player_id(self, pts=(0, 0)):
+    def get_player_id(self, pts=(0, 0), kind=0):
         x = pts[0]
         y = pts[1]
-        id = None
+        card = Card(x, y, kind)
 
         if 0 < x <= 600 and 0 < y <= 400:
-            id = 1
+            self.player[0].append(card)
         elif 600 < x <= 1200 and 0 < y <= 400:
-            id = 2
+            self.player[1].append(card)
         elif 0 < x <= 600 and 400 < y <= 800:
-            id = 3
+            self.player[0].append(card)
         elif 600 < x <= 1200 and 400 < y <= 800:
-            id = 4
-        else:
-            id = 0
+            self.player[0].append(card)
 
-        return id
+    def create_players(self):
+        self.player = []
+        for i in range(4):
+            self.player.append(Player())
 
     def run(self):
         self.ap.add_argument("-i", "--image", help="path to the image file")
@@ -244,34 +288,48 @@ class cardDetector:
             # Identify contour is card
             contour_sort, contour_is_card = self.__find_cards(img_dilation)
 
-            self.cards = []
+            # Store the images in the resources with the key points
             desList = self.findDes(self.images)
+
+            # Create the pleayer area
+            self.create_players()
+            cards = []
 
             if len(contour_sort) != 0:
                 for i in range(len(contour_sort)):
                     if contour_is_card[i] == 1:
-                        self.cards.append(
+                        cards.append(
                             tuple((self.__preprocess_card(img_dilation, contour_sort[i]), contour_sort[i])))
                         # cards.append(self.__preprocess_card(img_dilation, contour_sort[i]))
                         # contours.append(contour_sort[i])
 
-            for i in range(len(self.cards)):
-                id = self.findID(self.cards[i][0], desList)
+            for i in range(len(cards)):
+                id = self.findID(cards[i][0], desList)
 
                 if id != -1:
                     print(self.classNames[id])
-                    cv2.putText(self.cards[i][0], self.classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1,
+                    cv2.putText(cards[i][0], self.classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1,
                                 (0, 255, 0), 2)
 
                 # get the contour
-                pts = self.get_center_contour(self.cards[i][1])
+                pts = self.get_center_contour(cards[i][1])
 
                 self.draw_rectangle_test(frame, contour_sort[i])
 
-                pts_text = "Player {}".format(self.get_player_id(pts))
+                # add card into player area
 
-                cv2.putText(frame, pts_text, (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
-                cv2.imshow('frame {}'.format(i), self.cards[i])
+                self.get_player_id(pts, self.groupCard(self.classNames[id]))
+                # pts_text = "Player {}".format(self.get_player_id(pts))
+                # cv2.putText(frame, pts_text, (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+                cv2.imshow('frame {}'.format(i), cards[i][0])
+
+            #testing
+            for i in range(len(self.player)):
+                print(str(i) + " : " + str(len(self.player[i])))
+                for f in range(len(self.player[i])):
+                    print(self.player[i][f].get_x())
+                    print(self.player[i][f].get_y())
+                    print(self.player[i][f].get_type())
 
             # Train the first card in the found contour card
             if (cv2.waitKey(1) & 0xFF == ord('p')) and len(self.cards) != 0:
@@ -293,12 +351,6 @@ class cardDetector:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 print('Button Q: Thank you for using the card detector!')
                 break
-
-            # self.count = self.count + 1
-
-            # if self.count % 5 == 0 and len(self.cards) != 0:
-            #     self.count = 0
-            #     time.sleep(0.5)
 
 
 if __name__ == "__main__":
