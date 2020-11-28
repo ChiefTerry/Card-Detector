@@ -337,6 +337,7 @@ class cardDetector:
             # data[player_num]['is_dead'] = player.is_dead()
 
             # append card in list cards
+        print(data)
 
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)

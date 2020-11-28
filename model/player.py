@@ -51,10 +51,12 @@ class Player(list):
             self.heart = self.heart + 1
 
     def reduce_bang_bullet(self):
-        self.bang_bullet = self.bang_bullet - 1
+        if self.bang_bullet > 0:
+            self.bang_bullet = self.bang_bullet - 1
 
     def reduce_click_bullet(self):
-        self.click_bullet = self.click_bullet - 1
+        if self.click_bullet > 0:
+            self.click_bullet = self.click_bullet - 1
 
     def add_bang_bullet(self):
         self.bang_bullet = self.bang_bullet + 1
