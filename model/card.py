@@ -1,7 +1,4 @@
 class Card(object):
-    y = None
-    x = None
-    type = None
 
     def __init__(self, x, y, type):
         self.x = x
@@ -18,6 +15,4 @@ class Card(object):
     def get_type(self):
         return self.type
 
-    @classmethod
-    def __set_type__(self, type):
-        self.type = type
+
