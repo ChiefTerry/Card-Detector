@@ -1,0 +1,57 @@
+{
+    "players": [{
+            "life": 3,
+            "cash": 10000,
+            "bangBulletCount": 0,
+            "clickBulletCount": 3,
+            "diamondCount": 1,
+            "pictureCount": 0,
+            "hasSurrender": false,
+            "isDead": false,
+            "cards": [{
+                    "x": 198,
+                    "y": 507,
+                    "type": "click"
+                },
+                {
+                    "x": 606,
+                    "y": 469,
+                    "type": "bang_dilation"
+                }
+            ]
+        },
+        {
+            "life": 3,
+            "cash": 0,
+            "bangBulletCount": 4,
+            "clickBullet": 4,
+            "diamondCount": 0,
+            "num_picture": 0,
+            "hasSurrender": false,
+            "isDead": false,
+            "cards": []
+        },
+        {
+            "life": 3,
+            "cash": 0,
+            "bangBulletCount": 4,
+            "clickBullet": 4,
+            "diamondCount": 0,
+            "num_picture": 0,
+            "hasSurrender": false,
+            "isDead": false,
+            "cards": []
+        },
+        {
+            "life": 3,
+            "cash": 0,
+            "bangBulletCount": 4,
+            "clickBullet": 4,
+            "diamondCount": 0,
+            "num_picture": 0,
+            "hasSurrender": false,
+            "isDead": false,
+            "cards": []
+        }
+    ]
+}

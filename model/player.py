@@ -10,7 +10,7 @@ class Player(list):
         self.click_bullet = 4
         self.num_diamond = 0
         self.num_picture = 0
-        self.is_surrender = None
+        self.is_surrender = False
         self.is_dead = False
 
     def get_heart(self):
@@ -31,11 +31,11 @@ class Player(list):
     def get_num_picture(self):
         return self.num_picture
 
-    def is_surrender(self):
-        return self.is_surrender
-
-    def is_dead(self):
-        return self.is_dead
+    # def is_surrender(self):
+    #     return self.is_surrender
+    #
+    # def is_dead(self):
+    #     return self.is_dead
 
     def set_point(self, point):
         self.point = self.point + point

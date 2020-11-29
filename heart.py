@@ -4,12 +4,17 @@ import cv2  # Import the OpenCV library
 import numpy as np  # Import Numpy library
 import os
 import argparse
+
+from model import player
 from model.card import Card
 from model.player import Player
 from model.typeCard import Type
 
+green = (0, 255, 0)
+pink = (255, 0, 255)
 
-class cardDetector:
+
+class heart:
 
     def __init__(self):
         self.cap = cv2.VideoCapture(0)
@@ -23,10 +28,16 @@ class cardDetector:
             'card_max_area': 150000,
             'card_min_area': 15000,
         }
-
         self.config_canny = {
             'upper_threshold': 95,
             'bottom_threshold': 35
+        }
+
+        self.config_damaged = {
+            'max_thickness': 14,
+            'min_thickness': 12,
+            'damaged_max_area': 25000,
+            'damaged_min_area': 10000,
         }
         self.config_window_size = {
             'width': 640,
@@ -52,13 +63,13 @@ class cardDetector:
     def empty(self):
         pass
 
-    def __find_cards(self, thresh_image):
+    def __find_cards(self, thresh_image, img):
         """Finds all card-sized contours in a thresholded camera image.
         Returns the number of cards, and a list of card contours sorted
         from largest to smallest."""
 
         # Find contours and sort their indices by contour size
-        cnts, hier = cv2.findContours(thresh_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[-2:]
+        cnts, hier = cv2.findContours(thresh_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         index_sort = sorted(range(len(cnts)), key=lambda i: cv2.contourArea(cnts[i]), reverse=True)
 
         # If there are no contours, do nothing
@@ -87,28 +98,22 @@ class cardDetector:
             size = cv2.contourArea(cnts_sort[i])
             peri = cv2.arcLength(cnts_sort[i], True)
             approx = cv2.approxPolyDP(cnts_sort[i], 0.01 * peri, True)
+            if (len(approx) >= 12 and len(approx) <= 14) and (10000 < size) and (hier_sort[i][3] == -1):
+                # Apply bounding rectangle
+                x, y, width, height = cv2.boundingRect(approx)
+                initial_point = (x, y)
+                rec_width = x + width
+                rec_height = y + height
+                cv2.rectangle(img, initial_point, (rec_width, rec_height), pink, 7)
 
-            if ((size < self.config_card['card_max_area']) and (size > self.config_card['card_min_area'])
-                    and (hier_sort[i][3] == -1) and (len(approx) == 4)):
+                # Display text
+                cv2.putText(img, "Points: " + str(len(approx)), (x + width + 20, y + 20), \
+                            cv2.FONT_HERSHEY_COMPLEX, 1.0, green, 2)
+                cv2.putText(img, "Area: " + str(int(size)), (x + width + 20, y + 45), \
+                            cv2.FONT_HERSHEY_COMPLEX, 1.0, green, 2)
                 cnt_is_card[i] = 1
 
-            if (12 <= len(approx) <= 14) and (10000 < size) and (hier_sort[i][3] == -1):
-                cnt_is_card[i] = 2
-
         return cnts_sort, cnt_is_card
-
-    def __preprocess_damage(self, image, contour):
-        peri = cv2.arcLength(contour, True)
-        approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
-
-        x, y, w, h = cv2.boundingRect(contour)
-
-        pts1 = np.float32([[x, y], [x + w, y], [x, y + h], [x + w, y + h]])
-        pts2 = np.float32([[0, 0], [w, 0], [0, h], [w, h]])
-        M = cv2.getPerspectiveTransform(pts1, pts2)
-        warp = cv2.warpPerspective(image, M, (w, h))
-
-        return warp
 
     def __preprocess_card(self, image, contour):
         peri = cv2.arcLength(contour, True)
@@ -117,7 +122,15 @@ class cardDetector:
         x, y, w, h = cv2.boundingRect(contour)
         pts = np.float32(approx)
 
-        return self.__project_card_on_flat(image, pts, w, h)
+        pts1 = np.float32([[x, y], [x + w, y], [x , y + h], [x + w, y + h]])
+        pts2 = np.float32([[0, 0], [w, 0], [0, h], [w, h]])
+        matrix = cv2.getPerspectiveTransform(pts1, pts2)
+        imgOutput = cv2.warpPerspective(image, matrix, (w, h))
+
+        for x in range(0, 4):
+            cv2.circle(image, (pts1[x][0], pts1[x][1]), 15, (0, 255, 0), cv2.FILLED)
+
+        return imgOutput
 
     def get_center_contour(self, contour):
         peri = cv2.arcLength(contour, True)
@@ -156,16 +169,16 @@ class cardDetector:
         # before doing the perspective transform
 
         if w <= 0.8 * h:  # If card is vertically oriented
-            temp_rect[0] = tl
-            temp_rect[1] = tr
-            temp_rect[2] = br
-            temp_rect[3] = bl
+            temp_rect[0] = tl - 5
+            temp_rect[1] = tr - 5
+            temp_rect[2] = br + 5
+            temp_rect[3] = bl + 5
 
         if w >= 1.2 * h:  # If card is horizontally oriented
-            temp_rect[0] = bl
-            temp_rect[1] = tl
-            temp_rect[2] = tr
-            temp_rect[3] = br
+            temp_rect[0] = bl - 5
+            temp_rect[1] = tl- 5
+            temp_rect[2] = tr + 5
+            temp_rect[3] = br + 5
 
         maxWidth = 200
         maxHeight = 500
@@ -238,7 +251,7 @@ class cardDetector:
         elif 600 < x <= 1200 and 400 < y <= 800:
             self.players[0].append(card)
             return 3
-        return -1
+        return 0
 
     def create_players(self):
         self.players = []
@@ -272,9 +285,6 @@ class cardDetector:
                 elif nameCard == "cure":
                     player.increase_heart()
 
-                elif nameCard == "damaged":
-                    player.reduce_heart()
-
                 elif nameCard == "diamond_1":
                     player.increase_heart()
 
@@ -285,35 +295,6 @@ class cardDetector:
                     player.increase_num_picture()
 
     def importJson(self):
-        data = {}
-        data["players"] = []
-        for i in range(len(self.players)):
-            cards = []
-            for f in range(len(self.players[i])):
-                card = self.players[i][f]
-                cards.append({
-                    "x": card.get_x(),
-                    "y": card.get_y(),
-                    "typeCard": card.get_type()
-                })
-
-            player = self.players[i]
-            data["players"].append({
-                "life": player.get_heart(),
-                "cash": player.get_point(),
-                "bangBullet": player.get_bang_bullet(),
-                "clickBullet": player.get_click_bullet(),
-                "num_diamond": player.get_num_diamond(),
-                "num_picture": player.get_num_picture(),
-                "is_surrender": player.is_surrender,
-                "is_dead": player.is_dead,
-                "cards": cards
-            })
-
-        with open('data.json', 'w') as outfile:
-            json.dump(data, outfile)
-
-    def importCardsJson(self):
         data = {}
         for i in range(len(self.players)):
             player_num = 'player' + str(i)
@@ -336,8 +317,14 @@ class cardDetector:
             data[player_num]['click_bullet'] = player.get_click_bullet()
             data[player_num]['num_diamond'] = player.get_num_diamond()
             data[player_num]['num_picture'] = player.get_num_picture()
-            data[player_num]['is_surrender'] = player.is_surrender
-            data[player_num]['is_dead'] = player.is_dead
+            # data[player_num]['is_surrender'] = player.is_surrender()
+            # data[player_num]['is_dead'] = player.is_dead()
+
+            # append card in list cards
+        print(data)
+
+        with open('data.txt', 'w') as outfile:
+            json.dump(data, outfile)
 
     def run(self):
         self.ap.add_argument("-i", "--image", help="path to the image file")
@@ -372,7 +359,7 @@ class cardDetector:
             img_dilation = cv2.dilate(img_canny, kernel, iterations=1)
 
             # Identify contour is card
-            contour_sort, contour_is_card = self.__find_cards(img_dilation)
+            contour_sort, contour_is_card = self.__find_cards(img_dilation, frame)
 
             # Store the images in the resources with the key points
             desList = self.findDes(self.images)
@@ -382,28 +369,24 @@ class cardDetector:
 
             if len(contour_sort) != 0:
                 for i in range(len(contour_sort)):
-                    if contour_is_card[i] == 1 or contour_is_card[i] == 2:
-                        card = None
-                        # 1: card , 2: damged
-                        if contour_is_card[i] == 1:
-                            card = self.__preprocess_card(img_dilation, contour_sort[i])
-                        elif contour_is_card[i] == 2:
-                            card = self.__preprocess_damage(img_dilation, contour_sort[i])
+                    if contour_is_card[i] == 1:
+                        card = self.__preprocess_card(img_dilation, contour_sort[i])
 
-                        idName = self.findID(card, desList)
+                        id = self.findID(card, desList)
 
-                        if idName != -1:
-                            cv2.putText(card, self.classNames[idName], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1,
+                        if id != -1:
+                            print(self.classNames[id])
+                            cv2.putText(card, self.classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1,
                                         (0, 255, 0), 2)
-                            print(self.classNames[idName])
 
                         pts = self.get_center_contour(contour_sort[i])
                         self.draw_rectangle_test(frame, contour_sort[i])
 
                         # Put card in the player card list
-                        player = self.get_player_id(pts, self.classNames[idName])
+                        player = self.get_player_id(pts, self.classNames[id])
                         cv2.putText(frame, 'player {}'.format(player), (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX, 1,
                                     (0, 255, 0), 2)
+                        cv2.imshow('frame {}'.format(i), card)
 
             # testing add bullet
             # before adding
@@ -418,18 +401,18 @@ class cardDetector:
             print("After adding: ")
             for i in range(len(self.players)):
                 player = self.players[i]
-                print("Player " + str(i) + "has : " + str(player.heart))
+                print("Player " + str(i) + "has : " + str(player.bang_bullet))
 
             #
-            # Train the first card in the found contour card
-            # if (cv2.waitKey(1) & 0xFF == ord('p')):
+            # # Train the first card in the found contour card
+            # if (cv2.waitKey(1) & 0xFF == ord('p')) and len(self.cards) != 0:
             #     print('Button P: Train the first card is pressed!')
             #     cv2.imwrite("resources/{}.png".format(args['image']), self.cards[0][0])
             #     cv2.imshow('frame capture', self.cards[0][0])
 
             self.importJson()
 
-            # Show the card if it is exist in 
+            # Show the card if it is exist in
             if cv2.waitKey(1) & 0xFF == ord('o'):
                 print('Button P: Show the trained card is pressed!')
                 img = cv2.imread("resources/{}.png".format(args['image']))
@@ -446,5 +429,5 @@ class cardDetector:
 
 
 if __name__ == "__main__":
-    app = cardDetector()
+    app = heart()
     app.run()
