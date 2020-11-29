@@ -339,7 +339,7 @@ class cardDetector:
             # append card in list cards
         print(data)
 
-        with open('data.txt', 'w') as outfile:
+        with open('data.json', 'w') as outfile:
             json.dump(data, outfile)
 
     def run(self):
