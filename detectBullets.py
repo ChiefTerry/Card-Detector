@@ -5,23 +5,17 @@ import numpy as np  # Import Numpy library
 import os
 import argparse
 
-from model import player
-from model import card
 from model.card import Card
 from model.player import Player
-from model.typeCard import Type
 
 
 class cardDetector:
 
     def __init__(self):
         self.cap = cv2.VideoCapture(1)
-        self.cap = argparse.ArgumentParser()
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        # self.config_card = config['CARD']
-        # self.config_canny = config['CANNY_THRESHOLD']
-        # self.config_window_size = config['WINDOW_SIZE']
+        # self.cap = argparse.ArgumentParser()
+        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.path = 'resources'
         self.config_card = {
             # Detect small card with high distance
@@ -56,46 +50,6 @@ class cardDetector:
 
     def empty(self):
         pass
-
-    def groupCard(self, name):
-        if name == "5_dollar":
-            return Type.DOLLAR_5
-
-        if name == "10_dollar":
-            return Type.DOLLAR_10
-
-        if name == "20_dollar":
-            return Type.DOLLAR_20
-
-        if name == "add_bullet":
-            return Type.ADD_BULLET
-
-        if name == "bang_dilation":
-            return Type.BANG_BULLET
-
-        if name == "click_dilation":
-            return Type.CLICK_BULLET
-
-        if name == "cure":
-            return Type.CURE
-
-        if name == "diamond_1":
-            return Type.DIAMOND_1
-
-        if name == "diamond_5":
-            return Type.DIAMOND_5
-
-        if name == "diamond_10":
-            return Type.DIAMOND_10
-
-        if name == "hidden_bullet":
-            return Type.HIDDEN_BULLET
-
-        if name == "picture" and name == "picture1" and name == "picture2" and \
-                name == "picture3" and name == "picture4" and name == "pictur5" and \
-                name == "picture6" and name == "picture7" and name == "picture8" and \
-                name == "picture9":
-            return Type.PICTURE
 
     def __find_cards(self, thresh_image):
         """Finds all card-sized contours in a thresholded camera image.
@@ -228,6 +182,7 @@ class cardDetector:
             if max(matchList) > thres:
                 finalVal = matchList.index(max(matchList))
 
+        print(str(finalVal) + " final val")
         return finalVal
 
     def findDes(self, images):
@@ -278,80 +233,15 @@ class cardDetector:
         for i in range(4):
             self.players[i].clear()
 
-    def process_points(self):
-        for i in range(len(self.players)):
-            player = self.players[i]
-            for f in range(len(self.players[i])):
-                nameCard = self.players[i][f].get_type()
-                if nameCard in self.point_dictionary:
-                    player.set_point(self.point_dictionary[nameCard])
-                    # increase number of diamond
-                    if nameCard == "diamond_1" or nameCard == "diamond_5" or nameCard == "diamond_10":
-                        player.increase_num_diamond()
-
-                elif nameCard == "add_bullet":
-                    player.add_bang_bullet()
-
-                elif nameCard == "bang_dilation":
-                    player.reduce_bang_bullet()
-
-                elif nameCard == "click_dilation":
-                    player.reduce_click_bullet()
-
-                elif nameCard == "cure":
-                    player.increase_heart()
-
-                elif nameCard == "diamond_1":
-                    player.increase_heart()
-
-                elif nameCard == "picture" and nameCard == "picture1" and nameCard == "picture2" and \
-                        nameCard == "picture3" and nameCard == "picture4" and nameCard == "pictur5" and \
-                        nameCard == "picture6" and nameCard == "picture7" and nameCard == "picture8" and \
-                        nameCard == "picture9":
-                    player.increase_num_picture()
-
-    def importJson(self):
-        data = {}
-        for i in range(len(self.players)):
-            player_num = 'player' + str(i)
-            player = self.players[i]
-            data[player_num] = {}
-            data[player_num]["cards"] = {}
-            for f in range(len(self.players[i])):
-                card = self.players[i][f]
-                card_key = 'card' + str(f)
-                data[player_num]["cards"][card_key] = {}
-
-                # add attribute of the cards
-                data[player_num]["cards"][card_key]['x'] = card.get_x()
-                data[player_num]["cards"][card_key]['y'] = card.get_y()
-                data[player_num]["cards"][card_key]['type'] = card.get_type()
-
-            data[player_num]['heart'] = player.get_heart()
-            data[player_num]['point'] = player.get_point()
-            data[player_num]['bang_bullet'] = player.get_bang_bullet()
-            data[player_num]['click_bullet'] = player.get_click_bullet()
-            data[player_num]['num_diamond'] = player.get_num_diamond()
-            data[player_num]['num_picture'] = player.get_num_picture()
-            # data[player_num]['is_surrender'] = player.is_surrender()
-            # data[player_num]['is_dead'] = player.is_dead()
-
-            # append card in list cards
-        # print(data)
-
-        with open('players.json', 'w') as outfile:
-            json.dump(data, outfile)
-
     def run(self):
-        self.ap.add_argument("-i", "--image", help="path to the image file")
-        args = vars(self.ap.parse_args())
+
         self.get_image_from_path()
 
         # Create the pleayer area
         self.create_players()
 
         while True:
-            _, frame = self.cap.read()
+            ret_, frame = self.cap.read()
 
             # Gaussian Blur
             img_blur = cv2.GaussianBlur(frame, (5, 5), 0)
@@ -382,6 +272,8 @@ class cardDetector:
 
             # renew card list in the player list
             self.renew_card_list()
+            # New list of data insert
+            bullets = []
 
             if len(contour_sort) != 0:
                 for i in range(len(contour_sort)):
@@ -395,44 +287,26 @@ class cardDetector:
                             cv2.putText(card, self.classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1,
                                         (0, 255, 0), 2)
 
-                        pts = self.get_center_contour(contour_sort[i])
-                        self.draw_rectangle_test(frame, contour_sort[i])
+                            pts = self.get_center_contour(contour_sort[i])
+                            self.draw_rectangle_test(frame, contour_sort[i])
 
-                        # Put card in the player card list
-                        player = self.get_player_id(pts, self.classNames[id])
-                        cv2.putText(frame, 'player {}'.format(player), (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX, 1,
-                                    (0, 255, 0), 2)
-                        cv2.imshow('frame {}'.format(i), card)
+                            bullets.append({"x": pts[0], "y": pts[1], "type" : self.classNames[id]})
+                            # Put card in the player card list
+                            player = self.get_player_id(pts, self.classNames[id])
+                            cv2.putText(frame, 'player {}'.format(player), (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX,
+                                        1,
+                                        (0, 255, 0), 2)
+                            cv2.imshow('frame {}'.format(i), card)
 
-            # testing add bullet
-            # before adding
-            print("Before adding: ")
-            for i in range(len(self.players)):
-                player = self.players[i]
-                print(player.point)
+                # write file bullet json in the unity project
+                with open('/Users/tranmachsohan/Desktop/boardgame-ar-project/Assets/StreamingAssets/bullets.json', 'w') as outfile:
+                    json.dump(data, outfile)
 
-            self.process_points()
-
-            # after adding
-            print("After adding: ")
-            for i in range(len(self.players)):
-                player = self.players[i]
-                print("Player " + str(i) + "has : " + str(player.bang_bullet))
-
-            #
-            # # Train the first card in the found contour card
-            # if (cv2.waitKey(1) & 0xFF == ord('p')) and len(self.cards) != 0:
-            #     print('Button P: Train the first card is pressed!')
-            #     cv2.imwrite("resources/{}.png".format(args['image']), self.cards[0][0])
-            #     cv2.imshow('frame capture', self.cards[0][0])
-
-            self.importJson()
-
-            # Show the card if it is exist in 
-            if cv2.waitKey(1) & 0xFF == ord('o'):
-                print('Button P: Show the trained card is pressed!')
-                img = cv2.imread("resources/{}.png".format(args['image']))
-                cv2.imshow('frame capture2', img)
+            # Show the card if it is exist in
+            # if cv2.waitKey(1) & 0xFF == ord('o'):
+                # print('Button P: Show the trained card is pressed!')
+                # img = cv2.imread("resources/{}.png".format(args['image']))
+                # cv2.imshow('frame capture2', img)
 
             # Display the resulting frame
             cv2.imshow('frame', frame)
