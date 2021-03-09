@@ -299,7 +299,7 @@ class cardDetector:
                             cv2.imshow('frame {}'.format(i), card)
 
                 # write file bullet json in the unity project
-                with open('/Users/tranmachsohan/Desktop/boardgame-ar-project/Assets/StreamingAssets/bullets.json', 'w') as outfile:
+                with open('bullets.json', 'w') as outfile:
                     json.dump(data, outfile)
 
             # Show the card if it is exist in
