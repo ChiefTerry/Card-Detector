@@ -14,14 +14,14 @@ class cardDetector:
     def __init__(self):
         self.cap = cv2.VideoCapture(1)
         # self.cap = argparse.ArgumentParser()
-        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.path = 'resources'
         self.config_card = {
             # Detect small card with high distance
             'thickness': 4,
-            'card_max_area': 10000,  # Origin is 200000
-            'card_min_area': 3000,  # Origin is 15000
+            'card_max_area': 200000,  # Origin is 200000
+            'card_min_area': 15000,  # Origin is 15000
         }
         self.config_canny = {
             'upper_threshold': 35,
@@ -113,7 +113,7 @@ class cardDetector:
         cent_x = int(average[0][0])
         cent_y = int(average[0][1])
 
-        return cent_x, cent_y
+        return int(x + w / 2), int(x + w / 2 + h), int(y + h / 2), int(y + h / 2 + w), x, y
 
     def draw_rectangle_test(self, image, contour):
         peri = cv2.arcLength(contour, True)
@@ -273,7 +273,8 @@ class cardDetector:
             # renew card list in the player list
             self.renew_card_list()
             # New list of data insert
-            bullets = []
+            data = {}
+            data['bullets'] = []
 
             if len(contour_sort) != 0:
                 for i in range(len(contour_sort)):
@@ -290,17 +291,23 @@ class cardDetector:
                             pts = self.get_center_contour(contour_sort[i])
                             self.draw_rectangle_test(frame, contour_sort[i])
 
-                            bullets.append({"x": pts[0], "y": pts[1], "type": self.classNames[id]})
+                            bullets = {}
+                            bullets['x1'] = pts[0]
+                            bullets['x2'] = pts[1]
+                            bullets['y1'] = pts[2]
+                            bullets['y2'] = pts[3]
+                            bullets['type'] = self.classNames[id]
+
+                            data['bullets'].append(bullets)
                             # Put card in the player card list
-                            player = self.get_player_id(pts, self.classNames[id])
-                            cv2.putText(frame, 'player {}'.format(player), (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX,
+                            cv2.putText(frame, self.classNames[id], (pts[0], pts[2]), cv2.FONT_HERSHEY_COMPLEX,
                                         1,
                                         (0, 255, 0), 2)
                             cv2.imshow('frame {}'.format(i), card)
 
                 # write file bullet json in the unity project
-                with open('bullets.json', 'w') as outfile:
-                    json.dump({"bullets": bullets}, outfile)
+                with open('/Users/tranmachsohan/Desktop/boardgame-ar-project/Assets/StreamingAssets/bullets.json', 'w') as outfile:
+                    json.dump(data, outfile)
 
             # Show the card if it is exist in
             # if cv2.waitKey(1) & 0xFF == ord('o'):
