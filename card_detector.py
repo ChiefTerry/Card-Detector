@@ -6,14 +6,16 @@ import argparse
 path = 'resources'  #image in the resources
 orb = cv2.ORB_create(nfeatures=1000)
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
 green = (0, 255, 0)
 pink = (255, 0, 255)
 thickness = 4
 
-CARD_MAX_AREA = 150000
-CARD_MIN_AREA = 15000
+CARD_MAX_AREA = 10000
+CARD_MIN_AREA = 3000
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", help = "path to the image file")
@@ -35,9 +37,10 @@ def empty():
     pass
 
 cv2.namedWindow('Parameters')
+cv2.namedWindow('Card Area')
 cv2.resizeWindow('Parameters', 320, 120)
 cv2.createTrackbar('Threshold1', 'Parameters', 35, 255, empty)
-cv2.createTrackbar('Threshold2', 'Parameters', 95, 255, empty)                   
+cv2.createTrackbar('Threshold2', 'Parameters', 95, 255, empty)
 
 def find_contour(img, imgContour):
     contours, hierarchy = cv2.findContours(imgContour, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)[-2:]
@@ -83,6 +86,8 @@ def find_cards(thresh_image):
     # Find contours and sort their indices by contour size
     cnts,hier = cv2.findContours(thresh_image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     index_sort = sorted(range(len(cnts)), key=lambda i : cv2.contourArea(cnts[i]),reverse=True)
+
+    print("Contour length", len(cnts))
 
     # If there are no contours, do nothing
     if len(cnts) == 0:
@@ -232,7 +237,6 @@ def detectLocation(image, contour ):
     cv2.putText(image, cent_x, (0,0), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(image, cent_y, (20,20), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
 
-
 def main():
     while True:
         ret, frame = cap.read()
@@ -246,6 +250,7 @@ def main():
         # Get track position
         threshold1 = cv2.getTrackbarPos('Threshold1', 'Parameters')
         threshold2 = cv2.getTrackbarPos('Threshold2', 'Parameters')
+        # CARD_MAX_AREA = cv2.getTrackbarPos('CARD_MAX_AREA', 'Card Area')
 
         # Canny edge detection
         img_canny = cv2.Canny(img_gray, threshold1, threshold2)
@@ -253,6 +258,8 @@ def main():
         # Dialation image
         kernel = np.ones((1,1))
         img_dilation = cv2.dilate(img_canny, kernel, iterations = 1)
+
+        cv2.imshow('Dilation', img_dilation)
         
         # Identify contour is card
         contour_sort, contour_is_card = find_cards(img_dilation)

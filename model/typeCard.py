@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Type(Enum):
+class Type:
     HIDDEN_BULLET = 1
     CLICK_BULLET = 2
     BANG_BULLET = 3

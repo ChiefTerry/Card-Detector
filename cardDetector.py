@@ -4,34 +4,34 @@ import cv2  # Import the OpenCV library
 import numpy as np  # Import Numpy library
 import os
 import argparse
-import config
-import time
 
 from model import player
+from model import card
 from model.card import Card
 from model.player import Player
 from model.typeCard import Type
-from view import json2
-from view.json2 import importJson
 
 
 class cardDetector:
 
     def __init__(self):
-        self.cap = cv2.VideoCapture(0)
-        self.ap = argparse.ArgumentParser()
+        self.cap = cv2.VideoCapture(1)
+        self.cap = argparse.ArgumentParser()
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         # self.config_card = config['CARD']
         # self.config_canny = config['CANNY_THRESHOLD']
         # self.config_window_size = config['WINDOW_SIZE']
         self.path = 'resources'
         self.config_card = {
+            # Detect small card with high distance
             'thickness': 4,
-            'card_max_area': 150000,
-            'card_min_area': 15000,
+            'card_max_area': 10000,  # Origin is 200000
+            'card_min_area': 3000,  # Origin is 15000
         }
         self.config_canny = {
-            'upper_threshold': 95,
-            'bottom_threshold': 35
+            'upper_threshold': 35,
+            'bottom_threshold': 95
         }
         self.config_window_size = {
             'width': 640,
@@ -338,7 +338,6 @@ class cardDetector:
 
             # append card in list cards
         # print(data)
-        
 
         with open('players.json', 'w') as outfile:
             json.dump(data, outfile)
@@ -401,8 +400,8 @@ class cardDetector:
 
                         # Put card in the player card list
                         player = self.get_player_id(pts, self.classNames[id])
-                        cv2.putText(frame, 'player {}'.format(player), (pts[0], pts[1]),cv2.FONT_HERSHEY_COMPLEX, 1,
-                                        (0, 255, 0), 2)
+                        cv2.putText(frame, 'player {}'.format(player), (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX, 1,
+                                    (0, 255, 0), 2)
                         cv2.imshow('frame {}'.format(i), card)
 
             # testing add bullet

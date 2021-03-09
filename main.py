@@ -1,4 +1,4 @@
-from controller.cardDetector import cardDetector
+from cardDetector import cardDetector
 
 if __name__ == "__main__":
     app = cardDetector()

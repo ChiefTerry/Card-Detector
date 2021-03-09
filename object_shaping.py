@@ -37,7 +37,7 @@ def find_contour(img, imgContour):
         for contour in contours:
             area = cv2.contourArea(contour)
             
-            if area > 10000:
+            if area > 5000:
                 # Draw contour
                 # cv2.drawContours(img, contour, -1, green, thickness)
 
