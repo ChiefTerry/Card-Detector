@@ -290,7 +290,7 @@ class cardDetector:
                             pts = self.get_center_contour(contour_sort[i])
                             self.draw_rectangle_test(frame, contour_sort[i])
 
-                            bullets.append({"x": pts[0], "y": pts[1], "type" : self.classNames[id]})
+                            bullets.append({"x": pts[0], "y": pts[1], "type": self.classNames[id]})
                             # Put card in the player card list
                             player = self.get_player_id(pts, self.classNames[id])
                             cv2.putText(frame, 'player {}'.format(player), (pts[0], pts[1]), cv2.FONT_HERSHEY_COMPLEX,
@@ -300,13 +300,13 @@ class cardDetector:
 
                 # write file bullet json in the unity project
                 with open('bullets.json', 'w') as outfile:
-                    json.dump(data, outfile)
+                    json.dump({"bullets": bullets}, outfile)
 
             # Show the card if it is exist in
             # if cv2.waitKey(1) & 0xFF == ord('o'):
-                # print('Button P: Show the trained card is pressed!')
-                # img = cv2.imread("resources/{}.png".format(args['image']))
-                # cv2.imshow('frame capture2', img)
+            # print('Button P: Show the trained card is pressed!')
+            # img = cv2.imread("resources/{}.png".format(args['image']))
+            # cv2.imshow('frame capture2', img)
 
             # Display the resulting frame
             cv2.imshow('frame', frame)
