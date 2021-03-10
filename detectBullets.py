@@ -113,7 +113,7 @@ class cardDetector:
         cent_x = int(average[0][0])
         cent_y = int(average[0][1])
 
-        return int(x + w / 2), int(y) , int(x + w / 2) , int(y + h)
+        return int(x + w / 2), int(x + w / 2 + h), int(y + h / 2), int(y + h / 2 + w), x, y
 
     def draw_rectangle_test(self, image, contour):
         peri = cv2.arcLength(contour, True)
@@ -293,14 +293,14 @@ class cardDetector:
 
                             bullets = {}
                             bullets['x1'] = pts[0]
-                            bullets['y1'] = pts[1]
-                            bullets['x2'] = pts[2]
+                            bullets['x2'] = pts[1]
+                            bullets['y1'] = pts[2]
                             bullets['y2'] = pts[3]
                             bullets['type'] = self.classNames[id]
 
                             data['bullets'].append(bullets)
                             # Put card in the player card list
-                            cv2.putText(frame, self.classNames[id], (pts[2], pts[3]), cv2.FONT_HERSHEY_COMPLEX,
+                            cv2.putText(frame, self.classNames[id], (pts[0], pts[2]), cv2.FONT_HERSHEY_COMPLEX,
                                         1,
                                         (0, 255, 0), 2)
                             cv2.imshow('frame {}'.format(i), card)
