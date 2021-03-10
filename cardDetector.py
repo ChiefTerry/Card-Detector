@@ -52,7 +52,7 @@ class cardDetector:
         self.players = None
         self.classNames = None
         self.images = None
-        self.desList = []
+        self.desList = None
 
     def empty(self):
         pass
@@ -351,7 +351,7 @@ class cardDetector:
         self.create_players()
 
         while True:
-            ret_, frame = self.cap.read()
+            _, frame = self.cap.read()
 
             # Gaussian Blur
             img_blur = cv2.GaussianBlur(frame, (5, 5), 0)
