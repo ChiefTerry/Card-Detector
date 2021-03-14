@@ -20,12 +20,12 @@ class cardDetector:
         self.config_card = {
             # Detect small card with high distance
             'thickness': 4,
-            'card_max_area': 200000,  # Origin is 200000
-            'card_min_area': 15000,  # Origin is 15000
+            'card_max_area': 3000,  # Origin is 200000
+            'card_min_area': 150,  # Origin is 15000
         }
         self.config_canny = {
-            'upper_threshold': 35,
-            'bottom_threshold': 95
+            'upper_threshold': 30,
+            'bottom_threshold': 30
         }
         self.config_window_size = {
             'width': 640,
@@ -87,10 +87,13 @@ class cardDetector:
             peri = cv2.arcLength(cnts_sort[i], True)
             approx = cv2.approxPolyDP(cnts_sort[i], 0.01 * peri, True)
 
-            if ((size < self.config_card['card_max_area']) and (size > self.config_card['card_min_area'])
-                    and (hier_sort[i][3] == -1) and (len(approx) == 4)):
+            print(size)
+            # (size < self.config_card['card_max_area']) and
+            # and (hier_sort[i][3] == -1) and (len(approx) == 4)
+            if size > self.config_card['card_min_area'] and (hier_sort[i][3] == -1):
                 cnt_is_card[i] = 1
 
+        # remember to delete card area
         return cnts_sort, cnt_is_card
 
     def __preprocess_card(self, image, contour):
@@ -102,19 +105,6 @@ class cardDetector:
 
         return self.__project_card_on_flat(image, pts, w, h)
 
-    def get_center_contour(self, contour):
-        peri = cv2.arcLength(contour, True)
-        approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
-
-        x, y, w, h = cv2.boundingRect(contour)
-        pts = np.float32(approx)
-
-        average = np.sum(pts, axis=0) / len(pts)
-        cent_x = int(average[0][0])
-        cent_y = int(average[0][1])
-
-        return int(x + w / 2), int(x + w / 2 + h), int(y + h / 2), int(y + h / 2 + w), x, y
-
     def draw_rectangle_test(self, image, contour):
         peri = cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
@@ -125,6 +115,7 @@ class cardDetector:
 
     def __project_card_on_flat(self, image, pts, w, h):
         temp_rect = np.zeros((4, 2), dtype="float32")
+        points = np.zeros((4, 2), dtype="float32")
 
         s = np.sum(pts, axis=2)
         tl = pts[np.argmin(s)]
@@ -150,6 +141,12 @@ class cardDetector:
             temp_rect[2] = tr
             temp_rect[3] = br
 
+        points[0] = tl
+        points[1] = tr
+        points[2] = br
+        points[3] = bl
+
+        # Pop up frame
         maxWidth = 200
         maxHeight = 500
 
@@ -159,9 +156,9 @@ class cardDetector:
         M = cv2.getPerspectiveTransform(temp_rect, dst)
         warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
-        return warp
+        return warp, points
 
-    def findID(self, img, desList, thres=15):
+    def findID(self, img, desList, thres=13):
         kp2, des2 = self.orb.detectAndCompute(img, None)
         bf = cv2.BFMatcher()
         matchList = []
@@ -265,6 +262,7 @@ class cardDetector:
             img_dilation = cv2.dilate(img_canny, kernel, iterations=1)
 
             # Identify contour is card
+            # remmber to delete size in card
             contour_sort, contour_is_card = self.__find_cards(img_dilation)
 
             # Store the images in the resources with the key points
@@ -279,7 +277,7 @@ class cardDetector:
             if len(contour_sort) != 0:
                 for i in range(len(contour_sort)):
                     if contour_is_card[i] == 1:
-                        card = self.__preprocess_card(img_dilation, contour_sort[i])
+                        card, points = self.__preprocess_card(img_dilation, contour_sort[i])
 
                         id = self.findID(card, desList)
 
@@ -288,25 +286,30 @@ class cardDetector:
                             cv2.putText(card, self.classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1,
                                         (0, 255, 0), 2)
 
-                            pts = self.get_center_contour(contour_sort[i])
                             self.draw_rectangle_test(frame, contour_sort[i])
 
                             bullets = {}
-                            bullets['x1'] = pts[0]
-                            bullets['x2'] = pts[1]
-                            bullets['y1'] = pts[2]
-                            bullets['y2'] = pts[3]
+                            bullets['1'] = [points[0][0], points[0][1]]
+                            bullets['2'] = [points[1][0], points[1][1]]
+                            bullets['3'] = [points[2][0], points[2][1]]
+                            bullets['4'] = [points[3][0], points[3][1]]
                             bullets['type'] = self.classNames[id]
 
                             data['bullets'].append(bullets)
                             # Put card in the player card list
-                            cv2.putText(frame, self.classNames[id], (pts[0], pts[2]), cv2.FONT_HERSHEY_COMPLEX,
-                                        1,
-                                        (0, 255, 0), 2)
-                            cv2.imshow('frame {}'.format(i), card)
+                            cv2.putText(frame, "1", (points[0][0], points[0][1]), cv2.FONT_HERSHEY_COMPLEX,
+                                        1,(0, 255, 0), 2)
+                            cv2.putText(frame, "2", (points[1][0], points[1][1]), cv2.FONT_HERSHEY_COMPLEX,
+                                        1, (0, 255, 0), 2)
+                            cv2.putText(frame, "3", (points[2][0], points[2][1]), cv2.FONT_HERSHEY_COMPLEX,
+                                        1, (0, 255, 0), 2)
+                            cv2.putText(frame, "4", (points[3][0], points[3][1]), cv2.FONT_HERSHEY_COMPLEX,
+                                        1, (0, 255, 0), 2)
+                            # cv2.imshow('frame {}'.format(i), card)
 
                 # write file bullet json in the unity project
-                with open('/Users/tranmachsohan/Desktop/boardgame-ar-project/Assets/StreamingAssets/bullets.json', 'w') as outfile:
+                with open('/Users/tranmachsohan/Desktop/boardgame-ar-project/Assets/StreamingAssets/bullets.json',
+                          'w') as outfile:
                     json.dump(data, outfile)
 
             # Show the card if it is exist in

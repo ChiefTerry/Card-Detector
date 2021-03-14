@@ -14,8 +14,8 @@ green = (0, 255, 0)
 pink = (255, 0, 255)
 thickness = 4
 
-CARD_MAX_AREA = 10000
-CARD_MIN_AREA = 3000
+CARD_MAX_AREA = 3000
+CARD_MIN_AREA = 230
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", help = "path to the image file")
@@ -39,8 +39,8 @@ def empty():
 cv2.namedWindow('Parameters')
 cv2.namedWindow('Card Area')
 cv2.resizeWindow('Parameters', 320, 120)
-cv2.createTrackbar('Threshold1', 'Parameters', 35, 255, empty)
-cv2.createTrackbar('Threshold2', 'Parameters', 95, 255, empty)
+cv2.createTrackbar('Threshold1', 'Parameters', 30, 255, empty)
+cv2.createTrackbar('Threshold2', 'Parameters', 30, 255, empty)
 
 def find_contour(img, imgContour):
     contours, hierarchy = cv2.findContours(imgContour, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)[-2:]
@@ -57,17 +57,17 @@ def find_contour(img, imgContour):
 
         for contour in contours:
             area = cv2.contourArea(contour)
-            
+
             if CARD_MIN_AREA < area < CARD_MAX_AREA:
                 # Get perimeter and approximation of boundary
                 peri = cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
-                
+
                 # Apply bounding rectangle
                 x, y, width, height = cv2.boundingRect(approx)
                 initial_point = (x, y)
                 rec_width = x + width
-                rec_height = y + height        
+                rec_height = y + height
 
                 # Display text
                 if len(approx) == 4:
@@ -76,8 +76,8 @@ def find_contour(img, imgContour):
                         cv2.FONT_HERSHEY_COMPLEX, 1.0, green, 2)
                     cv2.putText(img, "Area: " + str(int(area)), (x + width + 20, y + 45), \
                         cv2.FONT_HERSHEY_COMPLEX, 1.0, green, 2)
-                    
-                
+
+
 def find_cards(thresh_image):
     """Finds all card-sized contours in a thresholded camera image.
     Returns the number of cards, and a list of card contours sorted
@@ -92,7 +92,7 @@ def find_cards(thresh_image):
     # If there are no contours, do nothing
     if len(cnts) == 0:
         return [], []
-    
+
     # Otherwise, initialize empty sorted contour and hierarchy lists
     cnts_sort = []
     hier_sort = []
@@ -116,8 +116,12 @@ def find_cards(thresh_image):
         peri = cv2.arcLength(cnts_sort[i],True)
         approx = cv2.approxPolyDP(cnts_sort[i],0.01*peri,True)
 
-        if ((size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
-            and (hier_sort[i][3] == -1) and (len(approx) == 4)):
+        # (size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
+        # and
+        # and (hier_sort[i][3] == -1)
+        # and (len(approx) == 4)
+        if ((size > CARD_MIN_AREA)):
+            print('[inside loop]',size)
             cnt_is_card[i] = 1
 
     return cnts_sort, cnt_is_card
@@ -259,7 +263,7 @@ def main():
         kernel = np.ones((1,1))
         img_dilation = cv2.dilate(img_canny, kernel, iterations = 1)
 
-        cv2.imshow('Dilation', img_dilation)
+        # cv2.imshow('Dilation', img_dilation)
         
         # Identify contour is card
         contour_sort, contour_is_card = find_cards(img_dilation)
@@ -286,6 +290,7 @@ def main():
 
             cv2.putText(frame, pts, (cent_x, cent_y), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
             cv2.imshow('frame {}'.format(i), cards[i][0])
+            cv2.imwrite("resources/{}"+str(i)+".png".format(args['image']), cards[i][0])
 
         # Train the first card in the found contour card
         if (cv2.waitKey(1) & 0xFF == ord('p')) and len(cards) != 0:
@@ -302,12 +307,13 @@ def main():
         # find_contour(frame, img_dilation)
 
         # Display the resulting frame
-        # first_frame = np.concatenate((frame,img_blur), axis = 1)
-        # second_frame = np.concatenate((img_canny,img_dilation), axis = 1)
-        # cv2.imshow('frame',first_frame)
-        # cv2.imshow('frame2',second_frame)
+        # resize_frame = cv2.resize(frame, (640, 480))
+        # resize_img_dilation = cv2.resize(img_dilation, (1280, 720))
+        # resize_img_dilation = cv2.cvtColor(resize_img_dilation, cv2.COLOR_GRAY2RGB)
+        # first_frame = np.concatenate((resize_frame,resize_img_dilation), axis = 1)
 
-        cv2.imshow('frame', frame)
+        cv2.imshow('..', frame)
+        cv2.imshow('.', img_dilation)
 
         # Exit the system
         if cv2.waitKey(1) & 0xFF == ord('q'):
