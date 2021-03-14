@@ -289,16 +289,17 @@ class cardDetector:
                             self.draw_rectangle_test(frame, contour_sort[i])
 
                             bullets = {}
-                            bullets['1'] = [points[0][0], points[0][1]]
-                            bullets['2'] = [points[1][0], points[1][1]]
-                            bullets['3'] = [points[2][0], points[2][1]]
-                            bullets['4'] = [points[3][0], points[3][1]]
+                            print(points[0][0])
+                            bullets['1'] = [int(points[0][0]), int(points[0][1])]
+                            bullets['2'] = [int(points[1][0]), int(points[1][1])]
+                            bullets['3'] = [int(points[2][0]), int(points[2][1])]
+                            bullets['4'] = [int(points[3][0]), int(points[3][1])]
                             bullets['type'] = self.classNames[id]
 
                             data['bullets'].append(bullets)
                             # Put card in the player card list
                             cv2.putText(frame, "1", (points[0][0], points[0][1]), cv2.FONT_HERSHEY_COMPLEX,
-                                        1,(0, 255, 0), 2)
+                                        1, (0, 255, 0), 2)
                             cv2.putText(frame, "2", (points[1][0], points[1][1]), cv2.FONT_HERSHEY_COMPLEX,
                                         1, (0, 255, 0), 2)
                             cv2.putText(frame, "3", (points[2][0], points[2][1]), cv2.FONT_HERSHEY_COMPLEX,
