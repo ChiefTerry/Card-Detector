@@ -8,6 +8,7 @@ import argparse
 from model.card import Card
 from model.player import Player
 
+BULLET_FILE_PATH = 'bullets.json'
 
 class cardDetector:
 
@@ -317,7 +318,7 @@ class cardDetector:
                             # cv2.imshow('frame {}'.format(i), card)
 
                 # write file bullet json in the unity project
-                with open('/Users/tranmachsohan/Desktop/boardgame-ar-project/Assets/StreamingAssets/bullets.json',
+                with open(BULLET_FILE_PATH,
                           'w') as outfile:
                     json.dump(data, outfile)
 
