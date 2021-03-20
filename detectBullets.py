@@ -290,10 +290,18 @@ class cardDetector:
 
                             bullets = {}
                             print(points[0][0])
-                            bullets['1'] = [int(points[0][0]), int(points[0][1])]
-                            bullets['2'] = [int(points[1][0]), int(points[1][1])]
-                            bullets['3'] = [int(points[2][0]), int(points[2][1])]
-                            bullets['4'] = [int(points[3][0]), int(points[3][1])]
+                            bullets['x1'] = int(points[0][0])
+                            bullets['y1'] = int(points[0][1])
+
+                            bullets['x2'] = int(points[1][0])
+                            bullets['y2'] = int(points[1][1])
+
+                            bullets['x3'] = int(points[2][0])
+                            bullets['y3'] = int(points[2][1])
+
+                            bullets['x4'] = int(points[3][0])
+                            bullets['y4'] = int(points[3][1])
+
                             bullets['type'] = self.classNames[id]
 
                             data['bullets'].append(bullets)
