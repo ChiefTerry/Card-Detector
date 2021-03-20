@@ -21,7 +21,7 @@ class cardDetector:
         self.config_card = {
             # Detect small card with high distance
             'thickness': 4,
-            'card_max_area': 3000,  # Origin is 200000
+            'card_max_area': 2000,  # Origin is 200000
             'card_min_area': 1500,  # Origin is 15000
         }
         self.config_canny = {
