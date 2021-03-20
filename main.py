@@ -22,7 +22,7 @@ class cardDetector:
             # Detect small card with high distance
             'thickness': 4,
             'card_max_area': 3000,  # Origin is 200000
-            'card_min_area': 150,  # Origin is 15000
+            'card_min_area': 1500,  # Origin is 15000
         }
         self.config_canny = {
             'upper_threshold': 30,
@@ -283,7 +283,6 @@ class cardDetector:
                         id = self.findID(card, desList)
 
                         if id != -1:
-                            print(self.classNames[id])
                             cv2.putText(card, self.classNames[id], (20, 20), cv2.FONT_HERSHEY_COMPLEX, 1,
                                         (0, 255, 0), 2)
 
